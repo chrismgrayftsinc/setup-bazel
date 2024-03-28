@@ -29,6 +29,7 @@ async function saveExternalCaches(cacheConfig) {
   const externalPaths = await globber.glob()
   const savedCaches = []
 
+  const saveCacheActions = []
   for (const externalPath of externalPaths) {
     const size = await getFolderSize(externalPath)
     const sizeMB = (size / 1024 / 1024).toFixed(2)
@@ -36,15 +37,17 @@ async function saveExternalCaches(cacheConfig) {
 
     if (sizeMB >= cacheConfig.minSize) {
       const name = path.basename(externalPath)
-      await saveCache({
+      const saveCacheAction = saveCache({
         enabled: cacheConfig[name]?.enabled ?? cacheConfig.default.enabled,
         files: cacheConfig[name]?.files || cacheConfig.default.files,
         name: cacheConfig.default.name(name),
         paths: cacheConfig.default.paths(name)
       })
+      saveCacheActions.push(saveCacheAction)
       savedCaches.push(name)
     }
   }
+  await Promise.all(saveCacheActions)
 
   if (savedCaches.length > 0) {
     const path = cacheConfig.manifest.path
